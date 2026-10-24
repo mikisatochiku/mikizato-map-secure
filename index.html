@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>三木里町 住宅管理マップ</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Yu Gothic",
+        "Meiryo",
+        sans-serif;
+      color: #222;
+    }
+
+    body {
+      background: #f5f5f5;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #ddd;
+      padding: 10px 14px;
+      z-index: 1000;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .search-area {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      min-width: 260px;
+    }
+
+    #searchInput {
+      flex: 1;
+      min-width: 150px;
+      padding: 8px 10px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      border: 1px solid #aaa;
+      background: #fff;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #f0f0f0;
+    }
+
+    .mode-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .mode-button {
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .mode-button.active {
+      background: #333;
+      color: #fff;
+      border-color: #333;
+    }
+
+    #map {
+      flex: 1;
+      width: 100%;
+      min-height: 300px;
+    }
+
+    .legend {
+      background: rgba(255, 255, 255, 0.96);
+      padding: 10px 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+      line-height: 1.5;
+      min-width: 150px;
+    }
+
+    .legend-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 3px 0;
+    }
+
+    .legend-color {
+      width: 18px;
+      height: 18px;
+      border: 1px solid #666;
+      flex-shrink: 0;
+    }
+
+    .popup-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    .popup-table th,
+    .popup-table td {
+      border-bottom: 1px solid #ddd;
+      padding: 5px 6px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .popup-table th {
+      width: 42%;
+      background: #f5f5f5;
+      white-space: nowrap;
+    }
+
+    .popup-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .leaflet-popup-content {
+      width: 360px !important;
+      max-width: 75vw;
+      max-height: 65vh;
+      overflow-y: auto;
+    }
+
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(245, 245, 245, 0.98);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.13);
+    }
+
+    .login-box h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .login-box p {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    #passwordInput {
+      width: 100%;
+      padding: 11px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    #loginButton {
+      width: 100%;
+      padding: 11px;
+      background: #333;
+      color: #fff;
+      border-color: #333;
+      font-weight: bold;
+    }
+
+    #loginStatus {
+      min-height: 22px;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #b00020;
+    }
+
+    .success {
+      color: #176b28;
+    }
+
+    .count-label {
+      font-size: 12px;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 700px) {
+      header {
+        padding: 8px;
+      }
+
+      h1 {
+        font-size: 17px;
+      }
+
+      .top-row {
+        display: block;
+      }
+
+      .search-area {
+        margin-top: 8px;
+      }
+
+      .leaflet-popup-content {
+        width: 280px !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="app">
+
+  <header>
+    <div class="top-row">
+
+      <h1>三木里町 住宅管理マップ</h1>
+
+      <div class="search-area">
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="house_id / polygon_id を検索"
+        >
+
+        <button id="searchButton">
+          検索
+        </button>
+      </div>
+
+      <div
+        id="featureCount"
+        class="count-label"
+      ></div>
+
+    </div>
+
+    <div class="mode-row">
+
+      <button
+        class="mode-button active"
+        data-mode="状態"
+      >
+        状態
+      </button>
+
+      <button
+        class="mode-button"
+        data-mode="登記状況"
+      >
+        登記状況
+      </button>
+
+      <button
+        class="mode-button"
+        data-mode="活用状況"
+      >
+        活用状況
+      </button>
+
+      <button
+        class="mode-button"
+        data-mode="調査状況"
+      >
+        調査状況
+      </button>
+
+    </div>
+  </header>
+
+  <div id="map"></div>
+
+</div>
+
+
+<div id="loginOverlay">
+
+  <div class="login-box">
+
+    <h2>三木里町 住宅管理マップ</h2>
+
+    <p>
+      この地図には管理用情報が含まれます。<br>
+      パスワードを入力してください。
+    </p>
+
+    <input
+      id="passwordInput"
+      type="password"
+      autocomplete="current-password"
+      placeholder="パスワード"
+    >
+
+    <button id="loginButton">
+      地図を開く
+    </button>
+
+    <div id="loginStatus"></div>
+
+  </div>
+
+</div>
+
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script>
+
+"use strict";
+
+
+// =========================================================
+// 基本設定
+// =========================================================
+
+const ENCRYPTED_FILE = "houses.enc";
+
+let geojsonData = null;
+let buildingsLayer = null;
+let currentMode = "状態";
+let legendControl = null;
+
+const layerByPolygonId = new Map();
+const layersByHouseId = new Map();
+
+
+// =========================================================
+// 地図
+// =========================================================
+
+const map = L.map(
+  "map",
+  {
+    preferCanvas: true
+  }
+).setView(
+  [34.0, 136.2],
+  15
+);
+
+
+// 国土地理院
+const gsiLayer = L.tileLayer(
+  "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
+  {
+    maxZoom: 18,
+    attribution:
+      '<a href="https://maps.gsi.go.jp/" target="_blank">地理院地図</a>'
+  }
+);
+
+
+// OpenStreetMap
+const osmLayer = L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom: 19,
+    attribution:
+      '&copy; OpenStreetMap contributors'
+  }
+);
+
+
+gsiLayer.addTo(map);
+
+
+L.control.layers(
+  {
+    "地理院地図": gsiLayer,
+    "OpenStreetMap": osmLayer
+  },
+  null,
+  {
+    position: "topright"
+  }
+).addTo(map);
+
+
+// =========================================================
+// 色設定
+// =========================================================
+
+const colorSettings = {
+
+  "状態": {
+
+    "居住中": "#4CAF50",
+
+    "一般空き家": "#FFD54F",
+
+    "危険空き家": "#E53935",
+
+    "不明": "#9E9E9E",
+
+    "未入力": "#E0E0E0"
+  },
+
+
+  "登記状況": {
+
+    "登記あり": "#42A5F5",
+
+    "建物登記無し": "#FB8C00",
+
+    "不明": "#9E9E9E",
+
+    "未入力": "#E0E0E0"
+  },
+
+
+  "活用状況": {
+
+    "賃貸可能": "#66BB6A",
+
+    "売却可能": "#29B6F6",
+
+    "活用予定なし": "#AB47BC",
+
+    "不明": "#9E9E9E",
+
+    "未入力": "#E0E0E0"
+  },
+
+
+  "調査状況": {
+
+    "未調査": "#EF5350",
+
+    "一部確認": "#FFCA28",
+
+    "確認済": "#42A5F5",
+
+    "不明": "#9E9E9E",
+
+    "未入力": "#E0E0E0"
+  }
+
+};
+
+
+// =========================================================
+// HTMLエスケープ
+// =========================================================
+
+function escapeHtml(value) {
+
+  return String(
+    value ?? ""
+  )
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#039;");
+}
+
+
+// =========================================================
+// 表示値取得
+// =========================================================
+
+function normalizedValue(properties, fieldName) {
+
+  const value = String(
+    properties?.[fieldName] ?? ""
+  ).trim();
+
+  if (!value) {
+    return "未入力";
+  }
+
+  return value;
+}
+
+
+// =========================================================
+// 建物スタイル
+// =========================================================
+
+function getFeatureStyle(feature) {
+
+  const properties =
+    feature.properties || {};
+
+  const value =
+    normalizedValue(
+      properties,
+      currentMode
+    );
+
+  const colors =
+    colorSettings[currentMode];
+
+  const fillColor =
+    colors[value] ||
+    colors["不明"] ||
+    "#9E9E9E";
+
+  return {
+    color: "#333333",
+    weight: 0.8,
+    opacity: 1,
+    fillColor: fillColor,
+    fillOpacity: 0.72
+  };
+}
+
+
+// =========================================================
+// ポップアップ
+// =========================================================
+
+const popupFields = [
+
+  ["polygon_id", "polygon_id"],
+
+  ["house_id", "house_id"],
+
+  ["エリア", "エリア"],
+
+  ["旧空き家No", "旧空き家No"],
+
+  ["旧通し番号", "旧通し番号"],
+
+  ["地番", "地番"],
+
+  ["家屋番号", "家屋番号"],
+
+  ["状態", "状態"],
+
+  ["登記状況", "登記状況"],
+
+  ["活用状況", "活用状況"],
+
+  ["調査状況", "調査状況"],
+
+  ["最終現地確認日", "最終現地確認日"],
+
+  ["所有者 氏名", "所有者 氏名"],
+
+  ["所有者 住所", "所有者 住所"],
+
+  ["所有者 連絡先", "所有者 連絡先"],
+
+  ["所有権情報", "所有権情報"],
+
+  ["構造", "構造"],
+
+  ["階数", "階数"],
+
+  ["種類（用途）", "種類（用途）"],
+
+  ["建築年", "建築年"],
+
+  ["増築等", "増築等"],
+
+  ["床面積 1階", "床面積 1階"],
+
+  ["床面積 2階", "床面積 2階"],
+
+  ["付属建物・床面積", "付属建物・床面積"],
+
+  ["床面積 合計", "床面積 合計"],
+
+  ["その他", "その他"],
+
+  ["維持管理状況", "維持管理状況"],
+
+  [
+    "今後の建物維持管理について",
+    "今後の建物維持管理について"
+  ],
+
+  ["メモ", "メモ"],
+
+  ["更新日", "更新日"]
+
+];
+
+
+function createPopup(feature) {
+
+  const p =
+    feature.properties || {};
+
+  const title =
+    p.house_id ||
+    p.polygon_id ||
+    "建物情報";
+
+  let html =
+    `<div class="popup-title">${escapeHtml(title)}</div>`;
+
+  html +=
+    '<table class="popup-table">';
+
+  for (
+    const [field, label]
+    of popupFields
+  ) {
+
+    const value =
+      String(
+        p[field] ?? ""
+      ).trim();
+
+    if (!value) {
+      continue;
+    }
+
+    html += `
+      <tr>
+        <th>${escapeHtml(label)}</th>
+        <td>${escapeHtml(value)}</td>
+      </tr>
+    `;
+  }
+
+  html += "</table>";
+
+  return html;
+}
+
+
+// =========================================================
+// GeoJSON表示
+// =========================================================
+
+function drawBuildings() {
+
+  if (buildingsLayer) {
+
+    map.removeLayer(
+      buildingsLayer
+    );
+  }
+
+
+  layerByPolygonId.clear();
+  layersByHouseId.clear();
+
+
+  buildingsLayer =
+    L.geoJSON(
+      geojsonData,
+      {
+
+        style:
+          getFeatureStyle,
+
+        onEachFeature:
+          function(
+            feature,
+            layer
+          ) {
+
+            const p =
+              feature.properties || {};
+
+            const polygonId =
+              String(
+                p.polygon_id || ""
+              ).trim();
+
+            const houseId =
+              String(
+                p.house_id || ""
+              ).trim();
+
+
+            layer.bindPopup(
+              createPopup(feature)
+            );
+
+
+            if (polygonId) {
+
+              layerByPolygonId.set(
+                polygonId.toUpperCase(),
+                layer
+              );
+            }
+
+
+            if (houseId) {
+
+              const key =
+                houseId.toUpperCase();
+
+              if (
+                !layersByHouseId.has(key)
+              ) {
+                layersByHouseId.set(
+                  key,
+                  []
+                );
+              }
+
+              layersByHouseId
+                .get(key)
+                .push(layer);
+            }
+
+
+            layer.on(
+              "mouseover",
+              function () {
+
+                layer.setStyle(
+                  {
+                    weight: 2.5,
+                    color: "#000000"
+                  }
+                );
+              }
+            );
+
+
+            layer.on(
+              "mouseout",
+              function () {
+
+                buildingsLayer
+                  .resetStyle(layer);
+              }
+            );
+          }
+      }
+    );
+
+
+  buildingsLayer.addTo(map);
+
+
+  const bounds =
+    buildingsLayer.getBounds();
+
+  if (bounds.isValid()) {
+
+    map.fitBounds(
+      bounds,
+      {
+        padding: [20, 20]
+      }
+    );
+  }
+
+
+  document
+    .getElementById(
+      "featureCount"
+    )
+    .textContent =
+      `${geojsonData.features.length} 建物`;
+
+
+  updateLegend();
+}
+
+
+// =========================================================
+// 色分け切替
+// =========================================================
+
+function changeMode(mode) {
+
+  currentMode = mode;
+
+
+  document
+    .querySelectorAll(
+      ".mode-button"
+    )
+    .forEach(
+      button => {
+
+        button
+          .classList
+          .toggle(
+            "active",
+            button.dataset.mode === mode
+          );
+      }
+    );
+
+
+  if (buildingsLayer) {
+
+    buildingsLayer
+      .setStyle(
+        getFeatureStyle
+      );
+  }
+
+
+  updateLegend();
+}
+
+
+// =========================================================
+// 凡例
+// =========================================================
+
+function updateLegend() {
+
+  if (legendControl) {
+
+    map.removeControl(
+      legendControl
+    );
+  }
+
+
+  legendControl =
+    L.control(
+      {
+        position: "bottomright"
+      }
+    );
+
+
+  legendControl.onAdd =
+    function () {
+
+      const div =
+        L.DomUtil.create(
+          "div",
+          "legend"
+        );
+
+
+      let html =
+        `<div class="legend-title">${escapeHtml(currentMode)}</div>`;
+
+
+      const colors =
+        colorSettings[currentMode];
+
+
+      for (
+        const [label, color]
+        of Object.entries(colors)
+      ) {
+
+        html += `
+          <div class="legend-row">
+            <span
+              class="legend-color"
+              style="background:${color}"
+            ></span>
+            <span>
+              ${escapeHtml(label)}
+            </span>
+          </div>
+        `;
+      }
+
+
+      div.innerHTML =
+        html;
+
+      return div;
+    };
+
+
+  legendControl.addTo(map);
+}
+
+
+// =========================================================
+// 検索
+// =========================================================
+
+function searchBuilding() {
+
+  const input =
+    document
+      .getElementById(
+        "searchInput"
+      )
+      .value
+      .trim()
+      .toUpperCase();
+
+
+  if (!input) {
+    return;
+  }
+
+
+  // polygon_id 完全一致
+  const polygonLayer =
+    layerByPolygonId.get(input);
+
+
+  if (polygonLayer) {
+
+    const bounds =
+      polygonLayer.getBounds();
+
+    map.fitBounds(
+      bounds,
+      {
+        maxZoom: 20,
+        padding: [50, 50]
+      }
+    );
+
+    polygonLayer.openPopup();
+
+    return;
+  }
+
+
+  // house_id 完全一致
+  const houseLayers =
+    layersByHouseId.get(input);
+
+
+  if (
+    houseLayers &&
+    houseLayers.length > 0
+  ) {
+
+    const group =
+      L.featureGroup(
+        houseLayers
+      );
+
+    map.fitBounds(
+      group.getBounds(),
+      {
+        maxZoom: 20,
+        padding: [50, 50]
+      }
+    );
+
+    houseLayers[0]
+      .openPopup();
+
+    return;
+  }
+
+
+  alert(
+    `「${input}」は見つかりませんでした。`
+  );
+}
+
+
+// =========================================================
+// Base64
+// =========================================================
+
+function base64ToBytes(base64) {
+
+  const binary =
+    atob(base64);
+
+  const bytes =
+    new Uint8Array(
+      binary.length
+    );
+
+  for (
+    let i = 0;
+    i < binary.length;
+    i++
+  ) {
+
+    bytes[i] =
+      binary.charCodeAt(i);
+  }
+
+  return bytes;
+}
+
+
+// =========================================================
+// 暗号化データ解除
+// =========================================================
+
+async function decryptData(
+  encrypted,
+  password
+) {
+
+  const encoder =
+    new TextEncoder();
+
+
+  const passwordKey =
+    await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
+    );
+
+
+  const key =
+    await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+
+        salt:
+          base64ToBytes(
+            encrypted.salt
+          ),
+
+        iterations:
+          encrypted.iterations,
+
+        hash: "SHA-256"
+      },
+
+      passwordKey,
+
+      {
+        name: "AES-GCM",
+        length: 256
+      },
+
+      false,
+
+      ["decrypt"]
+    );
+
+
+  const plaintext =
+    await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+
+        iv:
+          base64ToBytes(
+            encrypted.iv
+          ),
+
+        tagLength: 128
+      },
+
+      key,
+
+      base64ToBytes(
+        encrypted.data
+      )
+    );
+
+
+  let text =
+    new TextDecoder(
+      "utf-8"
+    ).decode(
+      plaintext
+    );
+
+
+  // BOM対策
+  text =
+    text.replace(
+      /^\uFEFF/,
+      ""
+    );
+
+
+  return JSON.parse(text);
+}
+
+
+// =========================================================
+// ログイン
+// =========================================================
+
+async function login() {
+
+  const password =
+    document
+      .getElementById(
+        "passwordInput"
+      )
+      .value;
+
+
+  const status =
+    document
+      .getElementById(
+        "loginStatus"
+      );
+
+
+  const button =
+    document
+      .getElementById(
+        "loginButton"
+      );
+
+
+  if (!password) {
+
+    status.className =
+      "error";
+
+    status.textContent =
+      "パスワードを入力してください。";
+
+    return;
+  }
+
+
+  button.disabled = true;
+
+  status.className = "";
+
+  status.textContent =
+    "地図データを読み込んでいます…";
+
+
+  try {
+
+    if (
+      !window.crypto ||
+      !window.crypto.subtle
+    ) {
+
+      throw new Error(
+        "この環境では暗号化機能を使用できません。"
+      );
+    }
+
+
+    const response =
+      await fetch(
+        ENCRYPTED_FILE,
+        {
+          cache: "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "houses.enc を読み込めません。"
+      );
+    }
+
+
+    const encrypted =
+      await response.json();
+
+
+    geojsonData =
+      await decryptData(
+        encrypted,
+        password
+      );
+
+
+    if (
+      !geojsonData ||
+      geojsonData.type !==
+        "FeatureCollection"
+    ) {
+
+      throw new Error(
+        "GeoJSON形式が正しくありません。"
+      );
+    }
+
+
+    drawBuildings();
+
+
+    status.className =
+      "success";
+
+    status.textContent =
+      "読み込み成功";
+
+
+    document
+      .getElementById(
+        "passwordInput"
+      )
+      .value = "";
+
+
+    document
+      .getElementById(
+        "loginOverlay"
+      )
+      .style.display = "none";
+
+
+    setTimeout(
+      () => {
+        map.invalidateSize();
+      },
+      100
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    status.className =
+      "error";
+
+    status.textContent =
+      "パスワードが違うか、地図データを読み込めませんでした。";
+
+  }
+
+  finally {
+
+    button.disabled =
+      false;
+  }
+}
+
+
+// =========================================================
+// イベント
+// =========================================================
+
+document
+  .getElementById(
+    "loginButton"
+  )
+  .addEventListener(
+    "click",
+    login
+  );
+
+
+document
+  .getElementById(
+    "passwordInput"
+  )
+  .addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter"
+      ) {
+
+        login();
+      }
+    }
+  );
+
+
+document
+  .getElementById(
+    "searchButton"
+  )
+  .addEventListener(
+    "click",
+    searchBuilding
+  );
+
+
+document
+  .getElementById(
+    "searchInput"
+  )
+  .addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter"
+      ) {
+
+        searchBuilding();
+      }
+    }
+  );
+
+
+document
+  .querySelectorAll(
+    ".mode-button"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          changeMode(
+            button.dataset.mode
+          );
+        }
+      );
+    }
+  );
+
+</script>
+
+</body>
+</html>
