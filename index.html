@@ -431,16 +431,96 @@ const osmLayer = L.tileLayer(
 gsiLayer.addTo(map);
 
 
-L.control.layers(
+const layerControl = L.control.layers(
   {
     "地理院地図": gsiLayer,
     "OpenStreetMap": osmLayer
   },
-  null,
+  {},
   {
     position: "topright"
   }
 ).addTo(map);
+
+
+// =========================================================
+// エリア区分（固定レイヤ）
+// =========================================================
+
+const areaColors = {
+  "A": "#F4B6A6",
+  "B": "#B9DDF3",
+  "C": "#CBE8B8"
+};
+
+
+fetch("areas.geojson")
+  .then(response => {
+
+    if (!response.ok) {
+      throw new Error("areas.geojson を読み込めません。");
+    }
+
+    return response.json();
+  })
+
+  .then(data => {
+
+    const areasLayer = L.geoJSON(
+      data,
+      {
+        style: function(feature) {
+
+          const areaId =
+            feature.properties?.area_id || "";
+
+          return {
+            color:
+              areaColors[areaId] || "#888888",
+
+            weight: 2,
+
+            fillColor:
+              areaColors[areaId] || "#CCCCCC",
+
+            fillOpacity: 0.12
+          };
+        },
+
+        onEachFeature:
+          function(feature, layer) {
+
+            const name =
+              feature.properties?.area_name ||
+              feature.properties?.area_id ||
+              "";
+
+            if (name) {
+              layer.bindTooltip(name);
+            }
+          }
+      }
+    );
+
+    // 最初は表示
+    areasLayer.addTo(map);
+
+    // 右上のレイヤ切替へ追加
+    layerControl.addOverlay(
+      areasLayer,
+      "エリア区分"
+    );
+
+    // 建物より後ろへ
+    areasLayer.bringToBack();
+  })
+
+  .catch(error => {
+    console.error(
+      "エリア区分の読み込みエラー:",
+      error
+    );
+  });
 
 
 // =========================================================
