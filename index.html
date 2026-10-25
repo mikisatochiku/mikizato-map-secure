@@ -474,7 +474,7 @@ fetch("areas.geojson")
           const areaId =
             feature.properties?.area_id || "";
 
-          return {
+        return {
             color:
               areaColors[areaId] || "#888888",
 
@@ -483,10 +483,10 @@ fetch("areas.geojson")
             fillColor:
               areaColors[areaId] || "#CCCCCC",
 
-            fillOpacity: 0.12
+            fillOpacity: 0.12,
 
             interactive: false
-          };
+           };
         },
 
         onEachFeature:
